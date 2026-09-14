@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#2F6FED" />
+<title>To Do List – gemeinsam organisieren</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#EEF1F6; --frame:#FFFFFF; --frame-border:#E3E8EF; --card:#F6F8FB;
+    --accent:#2F6FED; --accent-soft:#E3ECFD; --accent-on:#FFFFFF;
+    --text:#1F2A37; --muted:#7A8699; --track:#E3E8EF; --done:#A7B0BE;
+    --input-bg:#FFFFFF; --input-border:#E3E8EF;
+  }
+  [data-theme="sommer"]{--bg:#FCEFE4;--frame:#FFF3E9;--frame-border:#F0C9A8;--card:#FFFFFF;--accent:#E8612C;--accent-soft:#FBD9C4;--accent-on:#FFFFFF;--text:#5A2E12;--muted:#A56B45;--track:#F6D8C2;--done:#C9A98E;--input-bg:#FFFFFF;--input-border:#F6D8C2;}
+  [data-theme="hell"]{--bg:#EEF1F6;--frame:#FFFFFF;--frame-border:#E3E8EF;--card:#F6F8FB;--accent:#2F6FED;--accent-soft:#E3ECFD;--accent-on:#FFFFFF;--text:#1F2A37;--muted:#7A8699;--track:#E3E8EF;--done:#A7B0BE;--input-bg:#FFFFFF;--input-border:#E3E8EF;}
+  [data-theme="dunkel"]{--bg:#0E0E15;--frame:#16161F;--frame-border:#2A2A38;--card:#21212E;--accent:#8B7BF0;--accent-soft:#2E2A4A;--accent-on:#16161F;--text:#ECEAF5;--muted:#9892B5;--track:#2E2E3E;--done:#6A6580;--input-bg:#21212E;--input-border:#2E2E3E;}
+
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 12px 48px;transition:background .25s;}
+  .switcher{display:flex;gap:8px;background:var(--frame);border:1px solid var(--frame-border);padding:6px;border-radius:16px;margin-bottom:22px;}
+  .switcher button{border:none;cursor:pointer;font-size:13px;font-family:inherit;padding:8px 16px;border-radius:11px;background:transparent;color:var(--muted);transition:all .15s;}
+  .switcher button.active{background:var(--accent);color:var(--accent-on);}
+
+  .phone{width:370px;max-width:100%;height:720px;background:var(--frame);border:1px solid var(--frame-border);border-radius:32px;box-shadow:0 12px 40px rgba(0,0,0,.14);display:flex;flex-direction:column;overflow:hidden;transition:background .25s,border-color .25s;}
+  .head{padding:20px 20px 12px;display:flex;align-items:center;gap:10px;}
+  .head .back{cursor:pointer;font-size:20px;color:var(--muted);line-height:1;}
+  .head h1{font-size:20px;font-weight:600;flex:1;}
+  .head .hicon{font-size:20px;color:var(--accent);}
+  .body{flex:1;overflow-y:auto;padding:0 18px 12px;}
+  .body::-webkit-scrollbar{width:0;}
+
+  .nav{display:flex;border-top:1px solid var(--frame-border);background:var(--frame);}
+  .nav button{flex:1;border:none;background:none;cursor:pointer;font-family:inherit;padding:10px 0 12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;position:relative;}
+  .nav button.on{color:var(--accent);}
+  .nav .ic{font-size:19px;line-height:1;}
+  .badge{position:absolute;top:4px;right:calc(50% - 20px);background:#E24B4A;color:#fff;font-size:9px;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+
+  .tabs{display:flex;gap:6px;margin:4px 0 14px;}
+  .tabs button{flex:1;border:none;cursor:pointer;font-size:12px;font-family:inherit;padding:8px 4px;border-radius:14px;background:var(--accent-soft);color:var(--accent);transition:all .15s;}
+  .tabs button.active{background:var(--accent);color:var(--accent-on);}
+
+  .members{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+  .avatar.add{background:transparent;border:1.5px dashed var(--track);color:var(--muted);cursor:pointer;}
+
+  .progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .track{height:8px;background:var(--track);border-radius:6px;overflow:hidden;margin-bottom:14px;}
+  .bar{height:100%;background:var(--accent);border-radius:6px;transition:width .3s;}
+
+  .task{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:9px;}
+  .check{width:22px;height:22px;border-radius:7px;border:2px solid var(--track);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--accent-on);font-size:13px;}
+  .check.on{background:var(--accent);border-color:var(--accent);}
+  .task .tbody{flex:1;min-width:0;cursor:pointer;}
+  .task .title{font-size:14px;}
+  .task .title.done{text-decoration:line-through;color:var(--done);}
+  .task .meta{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;margin-top:3px;}
+  .del{border:none;background:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px;line-height:1;}
+
+  .add-row{display:flex;gap:8px;margin-top:10px;}
+  .add-row input{flex:1;border:1px solid var(--input-border);background:var(--input-bg);border-radius:14px;padding:11px 13px;font-size:13px;font-family:inherit;color:var(--text);outline:none;}
+  .add-row input::placeholder{color:var(--muted);}
+  .add-row .send{width:46px;border:none;border-radius:14px;background:var(--accent);color:var(--accent-on);cursor:pointer;font-size:20px;}
+
+  /* detail */
+  .detail-card{background:var(--card);border-radius:16px;padding:16px;margin:6px 0 16px;}
+  .detail-card .dt{font-size:17px;font-weight:600;margin-bottom:6px;}
+  .detail-card .dmeta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .sec-label{font-size:12px;color:var(--muted);font-weight:600;margin:10px 2px 10px;text-transform:uppercase;letter-spacing:.4px;}
+
+  /* chat bubbles */
+  .bubble{max-width:78%;padding:9px 12px;border-radius:16px;font-size:13px;margin-bottom:8px;line-height:1.4;word-wrap:break-word;}
+  .bubble .who{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:2px;}
+  .bubble.inc{background:var(--card);border-bottom-left-radius:4px;align-self:flex-start;}
+  .bubble.out{background:var(--accent);color:var(--accent-on);border-bottom-right-radius:4px;align-self:flex-end;}
+  .chatwrap{display:flex;flex-direction:column;}
+
+  /* friends */
+  .friend{display:flex;align-items:center;gap:11px;background:var(--card);border-radius:14px;padding:10px 13px;margin-bottom:9px;}
+  .friend .fname{font-size:14px;flex:1;}
+  .friend .status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#3B9E6A;display:inline-block;}
+  .dot.off{background:var(--track);}
+  .invite-btn{border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit;font-size:12px;padding:6px 12px;border-radius:12px;white-space:nowrap;}
+  .invite-btn.done{background:var(--accent-soft);border-color:transparent;}
+
+  /* reminders */
+  .rem{display:flex;align-items:center;gap:11px;background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:9px;}
+  .rem .rbody{flex:1;min-width:0;}
+  .rem .rt{font-size:14px;}
+  .rem .rsub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .toggle{width:40px;height:23px;border-radius:12px;background:var(--track);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s;}
+  .toggle.on{background:var(--accent);}
+  .toggle .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;transition:left .2s;}
+  .toggle.on .knob{left:19px;}
+  .day-label{font-size:12px;color:var(--muted);font-weight:600;margin:12px 2px 8px;}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px;}
+  .hint{margin-top:20px;font-size:12px;color:#98A2B3;text-align:center;max-width:370px;}
+</style>
+</head>
+<body data-theme="hell">
+
+  <div class="switcher" id="switcher">
+    <button data-theme="sommer">☀ Sommerlich</button>
+    <button data-theme="hell" class="active">☀ Hell</button>
+    <button data-theme="dunkel">🌙 Dunkel</button>
+  </div>
+
+  <div class="phone">
+    <div class="head" id="head"></div>
+    <div class="body" id="view"></div>
+    <div class="nav" id="nav"></div>
+  </div>
+
+  <p class="hint">Mockup · Tippe eine Aufgabe an für Kommentare · unten navigieren · Daten nur in diesem Browser.</p>
+
+<script>
+const ICONS={sommer:"☀",hell:"☀",dunkel:"🌙"};
+const LOGO=`<svg width="26" height="26" viewBox="0 0 512 512" style="flex-shrink:0" aria-hidden="true"><rect x="48" y="48" width="416" height="416" rx="108" fill="var(--accent)"/><rect x="132" y="149" width="54" height="54" rx="14" fill="var(--accent-on)"/><path d="M146 177 l11 12 l20 -25" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><rect x="206" y="166" width="150" height="20" rx="10" fill="var(--accent-on)"/><rect x="132" y="229" width="54" height="54" rx="14" fill="none" stroke="var(--accent-on)" stroke-width="7"/><rect x="206" y="246" width="128" height="20" rx="10" fill="var(--accent-on)" opacity="0.5"/><rect x="132" y="309" width="54" height="54" rx="14" fill="none" stroke="var(--accent-on)" stroke-width="7"/><rect x="206" y="326" width="104" height="20" rx="10" fill="var(--accent-on)" opacity="0.5"/></svg>`;
+
+const seed={
+  friends:[
+    {name:"Jeron",on:true},{name:"Teodora",on:true},{name:"Sarah",on:true},
+    {name:"Lea",on:false},{name:"Mama",on:false},{name:"Papa",on:false}
+  ],
+  groups:{
+    "Mit Freunden":{
+      members:["Jeron","Teodora","Nils"],
+      tasks:[
+        {t:"Strandtag organisieren",d:"19. Juni",done:false,remind:true,comments:[{who:"Teodora",text:"Ich bring die Frisbee mit!"},{who:"Jeron",text:"Top – ich kümmer mich um Musik 🎵"}]},
+        {t:"Glace besorgen",d:"18. Juni",done:true,remind:false,comments:[]},
+        {t:"Grill-Abend planen",d:"21. Juni",done:false,remind:true,comments:[{who:"Nils",text:"Wer bringt Kohle mit?"}]}
+      ],
+      chat:[
+        {who:"Jeron",text:"Yo, wer ist am Wochenende dabei?",me:false},
+        {who:"Teodora",text:"Ich! 🙌",me:false},
+        {who:"Du",text:"Bin dabei, freu mich!",me:true}
+      ]
+    },
+    "Familie":{
+      members:["Mama","Papa","Lea"],
+      tasks:[
+        {t:"Einkauf erledigen",d:"17. Juni",done:false,remind:true,comments:[{who:"Mama",text:"Milch nicht vergessen 🥛"}]},
+        {t:"Wer ist wann zuhause?",d:"18. Juni",done:false,remind:false,comments:[]}
+      ],
+      chat:[{who:"Mama",text:"Abendessen um 19 Uhr 🍝",me:false}]
+    },
+    "Haushalt":{
+      members:["Nils","Jeron"],
+      tasks:[
+        {t:"Küche putzen",d:"17. Juni",done:true,remind:false,comments:[]},
+        {t:"Müll rausbringen",d:"18. Juni",done:false,remind:true,comments:[]},
+        {t:"Wäsche",d:"19. Juni",done:false,remind:true,comments:[]}
+      ],
+      chat:[]
+    }
+  }
+};
+
+const KEY="checkmate-data-v2";
+let data=JSON.parse(localStorage.getItem(KEY)||"null")||structuredClone(seed);
+let current=Object.keys(data.groups)[0];
+let view="tasks";      // tasks | chat | friends | reminders | detail
+let detailIdx=null;
+
+const headEl=document.getElementById("head");
+const viewEl=document.getElementById("view");
+const navEl=document.getElementById("nav");
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function ini(n){return n.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function totalReminders(){let c=0;for(const g of Object.values(data.groups))c+=g.tasks.filter(t=>t.remind&&!t.done).length;return c;}
+
+function render(){
+  const g=data.groups[current];
+  // header
+  const titles={tasks:"To Do List",chat:current,friends:"Freunde",reminders:"Erinnerungen",detail:"Aufgabe"};
+  let hh=`<h1>${esc(titles[view])}</h1>`;
+  if(view==="detail"||view==="chat"){hh=`<span class="back" id="back">‹</span>`+hh;}
+  if(view==="tasks"){hh=LOGO+hh+`<span class="hicon">${ICONS[document.body.dataset.theme]}</span>`;}
+  headEl.innerHTML=hh;
+  const back=document.getElementById("back");
+  if(back)back.onclick=()=>{view="tasks";render();};
+
+  if(view==="tasks")renderTasks(g);
+  else if(view==="detail")renderDetail(g);
+  else if(view==="chat")renderChat(g);
+  else if(view==="friends")renderFriends();
+  else if(view==="reminders")renderReminders();
+
+  renderNav();
+}
+
+function renderTasks(g){
+  const done=g.tasks.filter(t=>t.done).length;
+  const pct=g.tasks.length?Math.round(done/g.tasks.length*100):0;
+  let h=`<div class="tabs">`+Object.keys(data.groups).map(k=>`<button data-g="${k}" class="${k===current?'active':''}">${esc(k)}</button>`).join("")+`</div>`;
+  h+=`<div class="members">`+g.members.map(m=>`<div class="avatar" title="${esc(m)}">${ini(m)}</div>`).join("")+`<div class="avatar add" id="goFriends" title="Freunde einladen">+</div></div>`;
+  h+=`<div class="progress-row"><span>${done}/${g.tasks.length} erledigt</span><span>${pct}%</span></div><div class="track"><div class="bar" style="width:${pct}%"></div></div>`;
+  h+=g.tasks.map((t,i)=>{
+    const cc=t.comments.length;
+    return `<div class="task">
+      <button class="check ${t.done?'on':''}" data-toggle="${i}" aria-label="abhaken">${t.done?'✓':''}</button>
+      <div class="tbody" data-open="${i}">
+        <div class="title ${t.done?'done':''}">${esc(t.t)}</div>
+        <div class="meta">${t.remind?'🔔 '+esc(t.d):esc(t.d)} <span>💬 ${cc}</span></div>
+      </div>
+      <button class="del" data-del="${i}" aria-label="löschen">🗑</button>
+    </div>`;
+  }).join("");
+  h+=`<div class="add-row"><input id="newtask" placeholder="Neue Aufgabe…"/><button class="send" id="addtask">+</button></div>`;
+  viewEl.innerHTML=h;
+
+  viewEl.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{current=b.dataset.g;render();});
+  viewEl.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{g.tasks[+b.dataset.toggle].done=!g.tasks[+b.dataset.toggle].done;save();render();});
+  viewEl.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{g.tasks.splice(+b.dataset.del,1);save();render();});
+  viewEl.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{detailIdx=+b.dataset.open;view="detail";render();});
+  document.getElementById("goFriends").onclick=()=>{view="friends";render();};
+  const inp=document.getElementById("newtask");
+  const add=()=>{const v=inp.value.trim();if(v){g.tasks.push({t:v,d:"bald fällig",done:false,remind:true,comments:[]});save();render();}};
+  document.getElementById("addtask").onclick=add;
+  inp.onkeydown=e=>{if(e.key==="Enter")add();};
+}
+
+function renderDetail(g){
+  const t=g.tasks[detailIdx];
+  let h=`<div class="detail-card"><div class="dt">${esc(t.t)}</div><div class="dmeta">🔔 fällig ${esc(t.d)} · ${t.done?'erledigt ✓':'offen'}</div></div>`;
+  h+=`<div class="sec-label">Kommentare (${t.comments.length})</div>`;
+  h+=`<div class="chatwrap">`;
+  if(t.comments.length===0)h+=`<div class="empty">Noch keine Kommentare.<br>Schreib den ersten 👇</div>`;
+  h+=t.comments.map(c=>c.who==="Du"
+    ?`<div class="bubble out">${esc(c.text)}</div>`
+    :`<div class="bubble inc"><div class="who">${esc(c.who)}</div>${esc(c.text)}</div>`).join("");
+  h+=`</div><div class="add-row"><input id="newcomment" placeholder="Kommentar schreiben…"/><button class="send" id="addcomment">➤</button></div>`;
+  viewEl.innerHTML=h;
+  const inp=document.getElementById("newcomment");
+  const add=()=>{const v=inp.value.trim();if(v){t.comments.push({who:"Du",text:v});save();render();viewEl.scrollTop=viewEl.scrollHeight;}};
+  document.getElementById("addcomment").onclick=add;
+  inp.onkeydown=e=>{if(e.key==="Enter")add();};
+}
+
+function renderChat(g){
+  let h=`<div class="members" style="margin-top:6px">`+g.members.map(m=>`<div class="avatar" title="${esc(m)}">${ini(m)}</div>`).join("")+`</div>`;
+  h+=`<div class="chatwrap">`;
+  if(g.chat.length===0)h+=`<div class="empty">Noch keine Nachrichten in dieser Gruppe.</div>`;
+  h+=g.chat.map(c=>c.me
+    ?`<div class="bubble out">${esc(c.text)}</div>`
+    :`<div class="bubble inc"><div class="who">${esc(c.who)}</div>${esc(c.text)}</div>`).join("");
+  h+=`</div><div class="add-row"><input id="newmsg" placeholder="Nachricht an ${esc(current)}…"/><button class="send" id="sendmsg">➤</button></div>`;
+  viewEl.innerHTML=h;
+  viewEl.scrollTop=viewEl.scrollHeight;
+  const inp=document.getElementById("newmsg");
+  const add=()=>{const v=inp.value.trim();if(v){g.chat.push({who:"Du",text:v,me:true});save();render();viewEl.scrollTop=viewEl.scrollHeight;}};
+  document.getElementById("sendmsg").onclick=add;
+  inp.onkeydown=e=>{if(e.key==="Enter")add();};
+}
+
+function renderFriends(){
+  let h=`<div class="sec-label" style="margin-top:8px">Freunde in Gruppe „${esc(current)}" einladen</div>`;
+  h+=data.friends.map((f,i)=>{
+    const inGroup=data.groups[current].members.includes(f.name);
+    return `<div class="friend">
+      <div class="avatar">${ini(f.name)}</div>
+      <div class="fname">${esc(f.name)}<div class="status"><span class="dot ${f.on?'':'off'}"></span>${f.on?'online':'offline'}</div></div>
+      <button class="invite-btn ${inGroup?'done':''}" data-inv="${i}" ${inGroup?'disabled':''}>${inGroup?'✓ dabei':'+ Einladen'}</button>
+    </div>`;
+  }).join("");
+  h+=`<div class="add-row"><input id="newfriend" placeholder="Freund per Name hinzufügen…"/><button class="send" id="addfriend">+</button></div>`;
+  viewEl.innerHTML=h;
+  viewEl.querySelectorAll("[data-inv]").forEach(b=>b.onclick=()=>{
+    const f=data.friends[+b.dataset.inv];
+    if(!data.groups[current].members.includes(f.name)){data.groups[current].members.push(f.name);save();render();}
+  });
+  const inp=document.getElementById("newfriend");
+  const add=()=>{const v=inp.value.trim();if(v){data.friends.push({name:v,on:false});save();render();}};
+  document.getElementById("addfriend").onclick=add;
+  inp.onkeydown=e=>{if(e.key==="Enter")add();};
+}
+
+function renderReminders(){
+  const items=[];
+  for(const[gname,g]of Object.entries(data.groups))
+    g.tasks.forEach((t,i)=>items.push({gname,i,t}));
+  const active=items.filter(x=>x.t.remind&&!x.t.done);
+  let h=`<div class="day-label" style="margin-top:8px">Aktive Erinnerungen (${active.length})</div>`;
+  if(active.length===0)h+=`<div class="empty">Keine aktiven Erinnerungen.<br>Aktiviere sie unten pro Aufgabe.</div>`;
+  h+=active.map(x=>reminderRow(x)).join("");
+  const others=items.filter(x=>!x.t.remind&&!x.t.done);
+  if(others.length){h+=`<div class="day-label">Ohne Erinnerung</div>`+others.map(x=>reminderRow(x)).join("");}
+  viewEl.innerHTML=h;
+  viewEl.querySelectorAll("[data-rem]").forEach(b=>b.onclick=()=>{
+    const[gn,ix]=b.dataset.rem.split("|");
+    const t=data.groups[gn].tasks[+ix];t.remind=!t.remind;save();render();
+  });
+}
+function reminderRow(x){
+  return `<div class="rem">
+    <span style="font-size:18px">🔔</span>
+    <div class="rbody"><div class="rt">${esc(x.t.t)}</div><div class="rsub">${esc(x.gname)} · fällig ${esc(x.t.d)}</div></div>
+    <div class="toggle ${x.t.remind?'on':''}" data-rem="${x.gname}|${x.i}"><div class="knob"></div></div>
+  </div>`;
+}
+
+function renderNav(){
+  const rc=totalReminders();
+  const items=[
+    {v:"tasks",ic:"✓",label:"Aufgaben"},
+    {v:"chat",ic:"💬",label:"Gruppen-Chat"},
+    {v:"friends",ic:"👥",label:"Freunde"},
+    {v:"reminders",ic:"🔔",label:"Erinnerungen",badge:rc}
+  ];
+  navEl.innerHTML=items.map(it=>{
+    const on=(view===it.v||(it.v==="tasks"&&view==="detail"));
+    return `<button data-nav="${it.v}" class="${on?'on':''}"><span class="ic">${it.ic}</span>${it.label}${it.badge?`<span class="badge">${it.badge}</span>`:''}</button>`;
+  }).join("");
+  navEl.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>{view=b.dataset.nav;render();});
+}
+
+document.getElementById("switcher").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{
+    const theme=b.dataset.theme;
+    document.body.dataset.theme=theme;
+    document.querySelector('meta[name="theme-color"]').setAttribute("content",getComputedStyle(document.body).getPropertyValue("--accent").trim());
+    document.getElementById("switcher").querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    render();
+  };
+});
+
+// optional: open a specific screen/theme via URL, e.g. ?theme=dunkel&view=chat
+(function(){
+  const p=new URLSearchParams(location.search);
+  const th=p.get("theme"); if(th&&ICONS[th]){document.body.dataset.theme=th;document.getElementById("switcher").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.theme===th));}
+  const v=p.get("view"); if(v){view=v; if(v==="detail")detailIdx=+(p.get("task")||0);}
+  if(p.get("clean")==="1"){document.querySelector(".switcher").style.display="none";document.querySelector(".hint").style.display="none";document.body.style.display="block";document.body.style.padding="14px";document.body.style.minHeight="0";document.querySelector(".phone").style.boxShadow="none";document.querySelector(".phone").style.margin="0";}
+})();
+
+render();
+</script>
+</body>
+</html>
